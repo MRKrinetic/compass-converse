@@ -6,9 +6,10 @@ import Favorites from './Favorites';
 
 interface SidebarProps {
   className?: string;
+  toggleSidebar: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ className }) => {
+const Sidebar: React.FC<SidebarProps> = ({ className, toggleSidebar }) => {
   const [isDarkMode, setIsDarkMode] = useState(false);
   
   const toggleDarkMode = () => {
@@ -22,7 +23,7 @@ const Sidebar: React.FC<SidebarProps> = ({ className }) => {
 
   return (
     <div className={cn(
-      "flex flex-col h-full w-72 border-r bg-white dark:bg-slate-900 transition-colors duration-300 ease-in-out",
+      "flex flex-col h-full w-72 border-r bg-white dark:bg-slate-900 transition-colors duration-300 ease-in-out relative",
       className
     )}>
       {/* Sidebar header/branding */}
@@ -34,6 +35,27 @@ const Sidebar: React.FC<SidebarProps> = ({ className }) => {
           </svg>
         </div>
         <h1 className="font-semibold text-xl tracking-tight">Compass AI</h1>
+        
+        {/* Toggle sidebar button (now inside the sidebar) */}
+        <button 
+          onClick={toggleSidebar}
+          className="ml-auto p-2 bg-white dark:bg-slate-800 rounded-md shadow-soft hover:bg-compass-50 dark:hover:bg-slate-700 transition-colors"
+          aria-label="Close sidebar"
+        >
+          <svg 
+            xmlns="http://www.w3.org/2000/svg" 
+            width="20" 
+            height="20" 
+            viewBox="0 0 24 24" 
+            fill="none" 
+            stroke="currentColor" 
+            strokeWidth="2" 
+            strokeLinecap="round" 
+            strokeLinejoin="round"
+          >
+            <path d="m15 18-6-6 6-6" />
+          </svg>
+        </button>
       </div>
       
       {/* Sidebar content */}

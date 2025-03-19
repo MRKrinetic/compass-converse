@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
 import RecentTrips from './RecentTrips';
 import Favorites from './Favorites';
+import { Hotel, Plane, PlaneTakeoff, Luggage, Map } from 'lucide-react';
 
 interface SidebarProps {
   className?: string;
@@ -101,6 +102,36 @@ const Sidebar: React.FC<SidebarProps> = ({ className, toggleSidebar }) => {
           </button>
         </div>
         
+        {/* Travel Booking Options - NEW SECTION */}
+        <div className="px-1.5 space-y-1">
+          <h3 className="text-xs font-medium uppercase text-muted-foreground px-3 mb-2">Travel Options</h3>
+          
+          <button className="w-full text-left px-3 py-2.5 rounded-lg hover:bg-compass-50/50 dark:hover:bg-slate-800/50 transition-colors flex items-center gap-3">
+            <Hotel size={16} className="text-compass-600 dark:text-compass-400" />
+            <span className="text-sm">Book Hotels</span>
+          </button>
+          
+          <button className="w-full text-left px-3 py-2.5 rounded-lg hover:bg-compass-50/50 dark:hover:bg-slate-800/50 transition-colors flex items-center gap-3">
+            <PlaneTakeoff size={16} className="text-compass-600 dark:text-compass-400" />
+            <span className="text-sm">Book Flights</span>
+          </button>
+          
+          <button className="w-full text-left px-3 py-2.5 rounded-lg hover:bg-compass-50/50 dark:hover:bg-slate-800/50 transition-colors flex items-center gap-3">
+            <Plane size={16} className="text-compass-600 dark:text-compass-400" />
+            <span className="text-sm">Flight Status</span>
+          </button>
+          
+          <button className="w-full text-left px-3 py-2.5 rounded-lg hover:bg-compass-50/50 dark:hover:bg-slate-800/50 transition-colors flex items-center gap-3">
+            <Luggage size={16} className="text-compass-600 dark:text-compass-400" />
+            <span className="text-sm">Rental Cars</span>
+          </button>
+          
+          <button className="w-full text-left px-3 py-2.5 rounded-lg hover:bg-compass-50/50 dark:hover:bg-slate-800/50 transition-colors flex items-center gap-3">
+            <Map size={16} className="text-compass-600 dark:text-compass-400" />
+            <span className="text-sm">Explore Destinations</span>
+          </button>
+        </div>
+        
         {/* Recent Trips section */}
         <RecentTrips />
         
@@ -154,3 +185,4 @@ const Sidebar: React.FC<SidebarProps> = ({ className, toggleSidebar }) => {
 };
 
 export default Sidebar;
+

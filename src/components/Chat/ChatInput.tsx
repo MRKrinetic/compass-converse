@@ -1,7 +1,9 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useChat } from '@/contexts/ChatContext';
 import { cn } from '@/lib/utils';
+import { transcribeVoiceRecording } from '@/api/voice';
+import { toast } from "@/components/ui/use-toast";
 
 interface ChatInputProps {
   className?: string;
@@ -10,8 +12,104 @@ interface ChatInputProps {
 const ChatInput: React.FC<ChatInputProps> = ({ className }) => {
   const [message, setMessage] = useState('');
   const [isRecording, setIsRecording] = useState(false);
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
+  const [audioChunks, setAudioChunks] = useState<Blob[]>([]);
   const { sendMessage } = useChat();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Set up media recorder when recording state changes
+  useEffect(() => {
+    if (isRecording) {
+      startRecording();
+    } else if (mediaRecorder) {
+      stopRecording();
+    }
+    // Don't include mediaRecorder in deps as it would cause infinite loop
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isRecording]);
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          setAudioChunks((chunks) => [...chunks, e.data]);
+        }
+      };
+      
+      recorder.onstop = async () => {
+        // Process the collected audio chunks
+        if (audioChunks.length > 0) {
+          const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+          await processAudioBlob(audioBlob);
+          setAudioChunks([]);
+        }
+        
+        // Stop all tracks in the stream
+        stream.getTracks().forEach(track => track.stop());
+      };
+      
+      // Start recording
+      recorder.start();
+      setMediaRecorder(recorder);
+      
+      toast({
+        title: "Recording Started",
+        description: "Speak clearly into your microphone",
+      });
+    } catch (error) {
+      console.error('Error starting recording:', error);
+      setIsRecording(false);
+      toast({
+        title: "Microphone Error",
+        description: "Could not access your microphone. Please check permissions.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+      mediaRecorder.stop();
+      toast({
+        title: "Processing Speech",
+        description: "Converting your speech to text...",
+      });
+    }
+  };
+
+  const processAudioBlob = async (audioBlob: Blob) => {
+    try {
+      const response = await transcribeVoiceRecording({ audioBlob });
+      
+      if (response.status === 'success' && response.transcription) {
+        setMessage(response.transcription);
+        toast({
+          title: "Transcription Complete",
+          description: `"${response.transcription}"`,
+        });
+      } else {
+        toast({
+          title: "Transcription Failed",
+          description: response.message || "Could not understand the audio",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error processing audio:', error);
+      toast({
+        title: "Processing Error",
+        description: "Failed to process your speech",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const toggleRecording = () => {
+    setIsRecording(!isRecording);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,19 +129,6 @@ const ChatInput: React.FC<ChatInputProps> = ({ className }) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSubmit(e);
-    }
-  };
-
-  const toggleRecording = () => {
-    setIsRecording(!isRecording);
-    
-    // In a real app, this would connect to browser speech recognition API
-    if (!isRecording) {
-      // Simulate recording with a timeout
-      setTimeout(() => {
-        setIsRecording(false);
-        setMessage('Show me the best places to visit in Tokyo');
-      }, 2000);
     }
   };
 

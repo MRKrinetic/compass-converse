@@ -14,6 +14,7 @@ import {
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
 import { SettingsButton } from '@/components/Settings/SettingsButton';
+import ProfileCard from '@/components/Profile/ProfileCard';
 
 interface ChatWindowProps {
   className?: string;
@@ -64,39 +65,33 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ className }) => {
                 </Avatar>
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel>My Account</DropdownMenuLabel>
+            <DropdownMenuContent align="end" className="w-72 p-0" side="bottom" sideOffset={5}>
+              <div className="p-2">
+                <ProfileCard 
+                  onSignIn={() => console.log('Sign in clicked')}
+                  onSignUp={() => console.log('Sign up clicked')}
+                  onProfile={() => console.log('Profile clicked')}
+                />
+              </div>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="cursor-pointer">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
-                  <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
-                  <circle cx="12" cy="7" r="4" />
-                </svg>
-                <span>Profile</span>
-              </DropdownMenuItem>
-              
-              {/* Settings Button */}
               <DropdownMenuItem asChild>
                 <SettingsButton />
               </DropdownMenuItem>
-              
               <DropdownMenuSeparator />
               <DropdownMenuItem className="cursor-pointer">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
-                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                  <polyline points="16 17 21 12 16 7" />
-                  <line x1="21" x2="9" y1="12" y2="12" />
+                  <rect width="20" height="14" x="2" y="5" rx="2" />
+                  <line x1="2" x2="22" y1="10" y2="10" />
                 </svg>
-                <span>Sign in</span>
+                <span>My Trips</span>
               </DropdownMenuItem>
               <DropdownMenuItem className="cursor-pointer">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
-                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                  <circle cx="9" cy="7" r="4" />
-                  <line x1="19" x2="19" y1="8" y2="14" />
-                  <line x1="22" x2="16" y1="11" y2="11" />
+                  <path d="M18 6H5a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h13l4-3.5L18 6Z" />
+                  <path d="M12 13v9" />
+                  <path d="M5 13v2a2 2 0 0 0 2 2h3" />
                 </svg>
-                <span>Sign up</span>
+                <span>Help & Support</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

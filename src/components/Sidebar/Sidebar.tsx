@@ -4,6 +4,9 @@ import { cn } from '@/lib/utils';
 import RecentTrips from './RecentTrips';
 import Favorites from './Favorites';
 import { Hotel, Plane, PlaneTakeoff, Luggage, Map } from 'lucide-react';
+import { useChat } from '@/contexts/ChatContext';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { toast } from "@/components/ui/use-toast";
 
 interface SidebarProps {
   className?: string;
@@ -12,6 +15,8 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ className, toggleSidebar }) => {
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const { messages, clearMessages } = useChat();
+  const isMobile = useIsMobile();
   
   const toggleDarkMode = () => {
     setIsDarkMode(!isDarkMode);
@@ -19,6 +24,30 @@ const Sidebar: React.FC<SidebarProps> = ({ className, toggleSidebar }) => {
       document.documentElement.classList.remove('dark');
     } else {
       document.documentElement.classList.add('dark');
+    }
+  };
+
+  const handleNewTrip = () => {
+    // Only save the chat if there are user messages
+    const hasUserMessages = messages.some(m => m.sender === 'user');
+    
+    if (hasUserMessages) {
+      // In a real app, this would save the conversation to a database
+      // For now, we'll just show a toast to indicate it's been saved
+      const tripName = `Trip on ${new Date().toLocaleDateString()}`;
+      
+      toast({
+        title: "Trip Saved",
+        description: `Your conversation has been saved as "${tripName}"`,
+      });
+    }
+    
+    // Clear the current chat and start a new one
+    clearMessages();
+    
+    // On mobile, close the sidebar after creating a new trip
+    if (isMobile) {
+      toggleSidebar();
     }
   };
 
@@ -172,7 +201,10 @@ const Sidebar: React.FC<SidebarProps> = ({ className, toggleSidebar }) => {
       
       {/* Footer */}
       <div className="border-t p-4">
-        <button className="w-full py-2 px-3 bg-compass-50 dark:bg-slate-800 hover:bg-compass-100 dark:hover:bg-slate-700 text-compass-700 dark:text-compass-300 rounded-lg transition-colors flex items-center justify-center gap-2">
+        <button 
+          onClick={handleNewTrip}
+          className="w-full py-2 px-3 bg-compass-50 dark:bg-slate-800 hover:bg-compass-100 dark:hover:bg-slate-700 text-compass-700 dark:text-compass-300 rounded-lg transition-colors flex items-center justify-center gap-2"
+        >
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M5 12h14" />
             <path d="M12 5v14" />
@@ -185,4 +217,3 @@ const Sidebar: React.FC<SidebarProps> = ({ className, toggleSidebar }) => {
 };
 
 export default Sidebar;
-

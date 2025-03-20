@@ -47,56 +47,14 @@ export const useChat = () => {
   return context;
 };
 
-// Mock AI responses for demo purposes
-const mockResponses = [
-  {
-    text: "Hello! I'm Compass AI, your travel assistant. How can I help you today?",
-    type: 'text',
-  },
-  {
-    text: "Paris is a beautiful destination! Here's a map of the city center with some key attractions marked:",
-    type: 'map',
-    metadata: {
-      coordinates: { lat: 48.8566, lng: 2.3522 },
-      zoom: 13,
-      placeName: 'Paris, France',
-    },
-  },
-  {
-    text: "Here's the current weather in New York City:",
-    type: 'weather',
-    metadata: {
-      weather: {
-        temperature: 72,
-        condition: 'Partly Cloudy',
-        icon: 'partly-cloudy',
-      },
-      coordinates: { lat: 40.7128, lng: -74.0060 },
-    },
-  },
-  {
-    text: "I found this hidden gem in Barcelona that not many tourists know about:",
-    type: 'place',
-    metadata: {
-      placeName: 'El Xampanyet',
-      placeImage: 'https://images.unsplash.com/photo-1560184611-ba28e1c896df?q=80&w=1974&auto=format&fit=crop',
-      placeRating: 4.7,
-      coordinates: { lat: 41.3851, lng: 2.1734 },
-    },
-  },
-  {
-    text: "In case of emergency, here's the nearest hospital to your location:",
-    type: 'emergency',
-    metadata: {
-      emergency: {
-        service: 'Central Hospital',
-        phone: '+1-555-123-4567',
-        address: '123 Medical Dr, City',
-      },
-      coordinates: { lat: 37.7749, lng: -122.4194 },
-    },
-  },
-];
+// API endpoints for various services
+const API_ENDPOINTS = {
+  GPT: '/api/gpt', // Replace with your actual GPT API endpoint
+  LOCATION: '/api/location', // Location search API
+  WEATHER: '/api/weather', // Weather information API
+  EMERGENCY: '/api/emergency', // Emergency services API
+  PLACES: '/api/places', // Places of interest API
+};
 
 export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -114,31 +72,160 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setMessages([welcomeMessage]);
   }, []);
 
-  // Generate a mock AI response based on user input
-  const generateAIResponse = useCallback((userMessage: string) => {
-    // Simulate AI "thinking" time
-    setIsTyping(true);
-    
-    setTimeout(() => {
-      // For demo purposes, we'll pick a random response from our mock data
-      const responseIndex = Math.floor(Math.random() * mockResponses.length);
-      const mockResponse = mockResponses[responseIndex];
+  // Process the user message and determine which API to call
+  const processMessage = async (userMessage: string) => {
+    try {
+      setIsTyping(true);
       
-      const messageType = mockResponse.type as MessageType;
+      // First, send to GPT API to analyze the user's intent
+      const gptResponse = await fetch(API_ENDPOINTS.GPT, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ message: userMessage }),
+      });
+      
+      if (!gptResponse.ok) {
+        throw new Error('Failed to connect to the AI service');
+      }
+      
+      const gptData = await gptResponse.json();
+      
+      // Based on the intent identified by GPT, make additional API calls if needed
+      let messageType: MessageType = 'text';
+      let metadata = {};
+      
+      if (gptData.intent) {
+        switch (gptData.intent) {
+          case 'location_search':
+            // Call location API
+            const locationResponse = await fetch(API_ENDPOINTS.LOCATION, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ query: gptData.locationQuery }),
+            });
+            
+            if (locationResponse.ok) {
+              const locationData = await locationResponse.json();
+              messageType = 'map';
+              metadata = {
+                coordinates: locationData.coordinates,
+                zoom: locationData.zoom || 13,
+                placeName: locationData.name,
+              };
+            }
+            break;
+            
+          case 'weather_check':
+            // Call weather API
+            const weatherResponse = await fetch(API_ENDPOINTS.WEATHER, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ location: gptData.location }),
+            });
+            
+            if (weatherResponse.ok) {
+              const weatherData = await weatherResponse.json();
+              messageType = 'weather';
+              metadata = {
+                weather: {
+                  temperature: weatherData.temperature,
+                  condition: weatherData.condition,
+                  icon: weatherData.icon,
+                },
+                coordinates: weatherData.coordinates,
+              };
+            }
+            break;
+            
+          case 'place_info':
+            // Call places API
+            const placesResponse = await fetch(API_ENDPOINTS.PLACES, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ query: gptData.placeQuery }),
+            });
+            
+            if (placesResponse.ok) {
+              const placeData = await placesResponse.json();
+              messageType = 'place';
+              metadata = {
+                placeName: placeData.name,
+                placeImage: placeData.image,
+                placeRating: placeData.rating,
+                coordinates: placeData.coordinates,
+              };
+            }
+            break;
+            
+          case 'emergency':
+            // Call emergency services API
+            const emergencyResponse = await fetch(API_ENDPOINTS.EMERGENCY, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ location: gptData.location }),
+            });
+            
+            if (emergencyResponse.ok) {
+              const emergencyData = await emergencyResponse.json();
+              messageType = 'emergency';
+              metadata = {
+                emergency: {
+                  service: emergencyData.service,
+                  phone: emergencyData.phone,
+                  address: emergencyData.address,
+                },
+                coordinates: emergencyData.coordinates,
+              };
+            }
+            break;
+            
+          default:
+            // Just use the text response from GPT
+            messageType = 'text';
+            break;
+        }
+      }
       
       const newAIMessage: ChatMessage = {
         id: `ai-${Date.now()}`,
-        content: mockResponse.text,
+        content: gptData.response,
         sender: 'ai',
         type: messageType,
         timestamp: new Date(),
-        metadata: mockResponse.metadata,
+        metadata,
       };
       
       setMessages(prev => [...prev, newAIMessage]);
+    } catch (error) {
+      console.error('Error processing message:', error);
+      const errorMessage: ChatMessage = {
+        id: `error-${Date.now()}`,
+        content: "I'm sorry, but I'm having trouble connecting to my services right now. Please try again later.",
+        sender: 'ai',
+        type: 'text',
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, errorMessage]);
+      
+      toast({
+        title: "Connection Error",
+        description: "Failed to connect to AI services.",
+        variant: "destructive",
+      });
+    } finally {
       setIsTyping(false);
-    }, 1500); // Simulate typing delay
-  }, []);
+    }
+  };
 
   // Handle sending a new user message
   const sendMessage = useCallback((content: string) => {
@@ -153,8 +240,8 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
     
     setMessages(prev => [...prev, newUserMessage]);
-    generateAIResponse(content);
-  }, [generateAIResponse]);
+    processMessage(content);
+  }, []);
 
   // Clear all messages
   const clearMessages = useCallback(() => {

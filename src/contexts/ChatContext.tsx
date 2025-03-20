@@ -30,11 +30,31 @@ export interface ChatMessage {
   };
 }
 
+export interface Trip {
+  id: string;
+  title: string;
+  date: string;
+  icon: string;
+  messages: ChatMessage[];
+}
+
+interface ActiveTrip {
+  id: string | null;
+  savedTrips: Trip[];
+}
+
 interface ChatContextType {
   messages: ChatMessage[];
   isTyping: boolean;
   sendMessage: (content: string) => void;
   clearMessages: () => void;
+  activeTrip: ActiveTrip;
+  saveTrip: (title?: string) => void;
+  loadTrip: (tripId: string) => void;
+  isAuthenticated: boolean;
+  login: (email: string, password: string) => Promise<boolean>;
+  logout: () => void;
+  user: { name: string; email: string } | null;
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
@@ -54,22 +74,107 @@ const API_ENDPOINTS = {
   WEATHER: '/api/weather', // Weather information API
   EMERGENCY: '/api/emergency', // Emergency services API
   PLACES: '/api/places', // Places of interest API
+  VOICE: '/api/voice', // Voice recording API
+};
+
+// Mock user data
+const MOCK_USER = {
+  name: "Krishna",
+  email: "krishna@gmail.com",
+  password: "4017"
+};
+
+// Get saved trips from localStorage
+const getSavedTrips = (): Trip[] => {
+  const savedTrips = localStorage.getItem('savedTrips');
+  return savedTrips ? JSON.parse(savedTrips) : [];
+};
+
+// Save trips to localStorage
+const saveTripsToStorage = (trips: Trip[]) => {
+  localStorage.setItem('savedTrips', JSON.stringify(trips));
+};
+
+// Get auth state from localStorage
+const getAuthState = () => {
+  const authState = localStorage.getItem('isAuthenticated');
+  return authState === 'true';
+};
+
+// Get user from localStorage
+const getUser = () => {
+  const user = localStorage.getItem('user');
+  return user ? JSON.parse(user) : null;
 };
 
 export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isTyping, setIsTyping] = useState<boolean>(false);
+  const [activeTrip, setActiveTrip] = useState<ActiveTrip>({
+    id: null,
+    savedTrips: getSavedTrips()
+  });
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(getAuthState());
+  const [user, setUser] = useState<{ name: string; email: string } | null>(getUser());
 
   // Initialize with a welcome message
   useEffect(() => {
-    const welcomeMessage: ChatMessage = {
-      id: 'welcome',
-      content: "Hello! I'm Compass AI, your travel assistant. How can I help you today?",
-      sender: 'ai',
-      type: 'text',
-      timestamp: new Date(),
-    };
-    setMessages([welcomeMessage]);
+    if (messages.length === 0) {
+      const welcomeMessage: ChatMessage = {
+        id: 'welcome',
+        content: "Hello! I'm Compass AI, your travel assistant. How can I help you today?",
+        sender: 'ai',
+        type: 'text',
+        timestamp: new Date(),
+      };
+      setMessages([welcomeMessage]);
+    }
+  }, [messages.length]);
+
+  // Login function
+  const login = useCallback(async (email: string, password: string): Promise<boolean> => {
+    // In a real app, this would be an API call
+    if (email === MOCK_USER.email && password === MOCK_USER.password) {
+      setIsAuthenticated(true);
+      setUser({ name: MOCK_USER.name, email: MOCK_USER.email });
+      
+      // Save to localStorage
+      localStorage.setItem('isAuthenticated', 'true');
+      localStorage.setItem('user', JSON.stringify({ 
+        name: MOCK_USER.name, 
+        email: MOCK_USER.email 
+      }));
+      
+      toast({
+        title: "Login successful",
+        description: `Welcome back, ${MOCK_USER.name}!`,
+      });
+      
+      return true;
+    } else {
+      toast({
+        title: "Login failed",
+        description: "Invalid email or password.",
+        variant: "destructive",
+      });
+      
+      return false;
+    }
+  }, []);
+
+  // Logout function
+  const logout = useCallback(() => {
+    setIsAuthenticated(false);
+    setUser(null);
+    
+    // Remove from localStorage
+    localStorage.removeItem('isAuthenticated');
+    localStorage.removeItem('user');
+    
+    toast({
+      title: "Logged out",
+      description: "You have been logged out successfully.",
+    });
   }, []);
 
   // Process the user message and determine which API to call
@@ -243,12 +348,80 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     processMessage(content);
   }, []);
 
+  // Save current conversation as a trip
+  const saveTrip = useCallback((customTitle?: string) => {
+    // Only save the chat if there are user messages
+    const hasUserMessages = messages.some(m => m.sender === 'user');
+    
+    if (hasUserMessages) {
+      // Extract title from first user message or use custom title
+      const firstUserMessage = messages.find(m => m.sender === 'user');
+      const title = customTitle || (firstUserMessage ? 
+        firstUserMessage.content.slice(0, 30) + (firstUserMessage.content.length > 30 ? '...' : '') : 
+        `Trip on ${new Date().toLocaleDateString()}`);
+      
+      // Generate a random icon
+      const icons = ['🗼', '🏖️', '🗽', '🥖', '🏔️', '🌋', '🏜️', '🏞️', '🏙️', '🌆'];
+      const randomIcon = icons[Math.floor(Math.random() * icons.length)];
+      
+      // Create new trip
+      const newTrip: Trip = {
+        id: `trip-${Date.now()}`,
+        title,
+        date: `${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
+        icon: randomIcon,
+        messages: [...messages],
+      };
+      
+      // Add to saved trips
+      const updatedTrips = [...activeTrip.savedTrips, newTrip];
+      setActiveTrip({
+        id: null,
+        savedTrips: updatedTrips
+      });
+      
+      // Save to localStorage
+      saveTripsToStorage(updatedTrips);
+      
+      toast({
+        title: "Trip Saved",
+        description: `Your conversation has been saved as "${title}"`,
+      });
+      
+      // Clear current chat
+      clearMessages();
+    } else {
+      toast({
+        title: "Nothing to save",
+        description: "Start a conversation first before saving a trip.",
+      });
+    }
+  }, [messages, activeTrip.savedTrips]);
+
+  // Load a saved trip
+  const loadTrip = useCallback((tripId: string) => {
+    const trip = activeTrip.savedTrips.find(t => t.id === tripId);
+    
+    if (trip) {
+      setMessages(trip.messages);
+      setActiveTrip({
+        ...activeTrip,
+        id: tripId
+      });
+      
+      toast({
+        title: "Trip Loaded",
+        description: `Loaded trip: ${trip.title}`,
+      });
+    }
+  }, [activeTrip]);
+
   // Clear all messages
   const clearMessages = useCallback(() => {
     setMessages([]);
-    toast({
-      title: "Chat cleared",
-      description: "All messages have been cleared.",
+    setActiveTrip({
+      ...activeTrip,
+      id: null
     });
     
     // Add welcome message back
@@ -262,10 +435,24 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       };
       setMessages([welcomeMessage]);
     }, 300);
-  }, []);
+  }, [activeTrip]);
 
   return (
-    <ChatContext.Provider value={{ messages, isTyping, sendMessage, clearMessages }}>
+    <ChatContext.Provider 
+      value={{ 
+        messages, 
+        isTyping, 
+        sendMessage, 
+        clearMessages, 
+        activeTrip, 
+        saveTrip,
+        loadTrip,
+        isAuthenticated,
+        login,
+        logout,
+        user
+      }}
+    >
       {children}
     </ChatContext.Provider>
   );

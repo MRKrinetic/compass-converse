@@ -1,43 +1,24 @@
 
 import React from 'react';
 import { cn } from '@/lib/utils';
+import { useChat } from '@/contexts/ChatContext';
 
 interface RecentTripsProps {
   className?: string;
 }
 
-const MOCK_TRIPS = [
-  {
-    id: 'trip-1',
-    title: 'Tokyo Exploration',
-    date: '2 days ago',
-    icon: '🗼',
-    isActive: true,
-  },
-  {
-    id: 'trip-2',
-    title: 'Barcelona Weekend',
-    date: '1 week ago',
-    icon: '🏖️',
-    isActive: false,
-  },
-  {
-    id: 'trip-3',
-    title: 'New York Business Trip',
-    date: '2 weeks ago',
-    icon: '🗽',
-    isActive: false,
-  },
-  {
-    id: 'trip-4',
-    title: 'Paris Getaway',
-    date: '1 month ago',
-    icon: '🥖',
-    isActive: false,
-  },
-];
+interface Trip {
+  id: string;
+  title: string;
+  date: string;
+  icon: string;
+  isActive: boolean;
+  messages: any[];
+}
 
 const RecentTrips: React.FC<RecentTripsProps> = ({ className }) => {
+  const { messages, loadTrip, activeTrip } = useChat();
+  
   return (
     <div className={cn("space-y-1", className)}>
       <div className="flex items-center justify-between px-3 py-1.5">
@@ -51,15 +32,16 @@ const RecentTrips: React.FC<RecentTripsProps> = ({ className }) => {
       </div>
       
       <ul className="space-y-1 px-1.5">
-        {MOCK_TRIPS.map((trip) => (
+        {activeTrip.savedTrips.map((trip) => (
           <li key={trip.id}>
             <button 
               className={cn(
                 "w-full text-left px-3 py-2.5 rounded-lg flex items-center gap-3 transition-colors group",
-                trip.isActive 
+                trip.id === activeTrip.id 
                   ? "bg-compass-50 text-compass-900 dark:bg-slate-800 dark:text-compass-50" 
                   : "hover:bg-compass-50/50 dark:hover:bg-slate-800/50"
               )}
+              onClick={() => loadTrip(trip.id)}
             >
               <span className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-md bg-white dark:bg-slate-700 shadow-sm">
                 {trip.icon}
@@ -87,6 +69,11 @@ const RecentTrips: React.FC<RecentTripsProps> = ({ className }) => {
             </button>
           </li>
         ))}
+        {activeTrip.savedTrips.length === 0 && (
+          <li className="text-sm text-muted-foreground text-center py-2">
+            No trips yet. Start a conversation and click "New Trip" to save it.
+          </li>
+        )}
       </ul>
     </div>
   );

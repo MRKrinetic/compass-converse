@@ -3,10 +3,11 @@ import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
 import RecentTrips from './RecentTrips';
 import Favorites from './Favorites';
-import { Hotel, Plane, PlaneTakeoff, Luggage, Map } from 'lucide-react';
+import { Hotel, Plane, PlaneTakeoff, Luggage, Map, Settings as SettingsIcon, LogOut } from 'lucide-react';
 import { useChat } from '@/contexts/ChatContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from "@/components/ui/use-toast";
+import { SettingsButton } from '@/components/Settings/SettingsButton';
 
 interface SidebarProps {
   className?: string;
@@ -15,7 +16,7 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ className, toggleSidebar }) => {
   const [isDarkMode, setIsDarkMode] = useState(false);
-  const { messages, clearMessages } = useChat();
+  const { saveTrip, isAuthenticated, logout } = useChat();
   const isMobile = useIsMobile();
   
   const toggleDarkMode = () => {
@@ -28,24 +29,17 @@ const Sidebar: React.FC<SidebarProps> = ({ className, toggleSidebar }) => {
   };
 
   const handleNewTrip = () => {
-    // Only save the chat if there are user messages
-    const hasUserMessages = messages.some(m => m.sender === 'user');
-    
-    if (hasUserMessages) {
-      // In a real app, this would save the conversation to a database
-      // For now, we'll just show a toast to indicate it's been saved
-      const tripName = `Trip on ${new Date().toLocaleDateString()}`;
-      
-      toast({
-        title: "Trip Saved",
-        description: `Your conversation has been saved as "${tripName}"`,
-      });
-    }
-    
-    // Clear the current chat and start a new one
-    clearMessages();
+    saveTrip();
     
     // On mobile, close the sidebar after creating a new trip
+    if (isMobile) {
+      toggleSidebar();
+    }
+  };
+
+  const handleLogout = () => {
+    logout();
+    // On mobile, close the sidebar after logout
     if (isMobile) {
       toggleSidebar();
     }
@@ -131,7 +125,10 @@ const Sidebar: React.FC<SidebarProps> = ({ className, toggleSidebar }) => {
           </button>
         </div>
         
-        {/* Travel Booking Options - NEW SECTION */}
+        {/* Recent Trips section */}
+        <RecentTrips />
+        
+        {/* Travel Booking Options */}
         <div className="px-1.5 space-y-1">
           <h3 className="text-xs font-medium uppercase text-muted-foreground px-3 mb-2">Travel Options</h3>
           
@@ -161,9 +158,6 @@ const Sidebar: React.FC<SidebarProps> = ({ className, toggleSidebar }) => {
           </button>
         </div>
         
-        {/* Recent Trips section */}
-        <RecentTrips />
-        
         {/* Favorites section */}
         <Favorites />
         
@@ -172,13 +166,7 @@ const Sidebar: React.FC<SidebarProps> = ({ className, toggleSidebar }) => {
         
         {/* Settings links */}
         <div className="space-y-1 px-1.5">
-          <button className="w-full text-left px-3 py-2.5 rounded-lg hover:bg-compass-50/50 dark:hover:bg-slate-800/50 transition-colors flex items-center gap-3">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground">
-              <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
-              <circle cx="12" cy="12" r="3" />
-            </svg>
-            <span className="text-sm">Settings</span>
-          </button>
+          <SettingsButton />
           
           <button className="w-full text-left px-3 py-2.5 rounded-lg hover:bg-compass-50/50 dark:hover:bg-slate-800/50 transition-colors flex items-center gap-3">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground">
@@ -196,6 +184,16 @@ const Sidebar: React.FC<SidebarProps> = ({ className, toggleSidebar }) => {
             </svg>
             <span className="text-sm">Help & Support</span>
           </button>
+          
+          {isAuthenticated && (
+            <button 
+              onClick={handleLogout}
+              className="w-full text-left px-3 py-2.5 rounded-lg hover:bg-compass-50/50 dark:hover:bg-slate-800/50 transition-colors flex items-center gap-3"
+            >
+              <LogOut size={16} className="text-muted-foreground" />
+              <span className="text-sm">Logout</span>
+            </button>
+          )}
         </div>
       </div>
       

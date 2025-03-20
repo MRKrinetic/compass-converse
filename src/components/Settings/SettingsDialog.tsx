@@ -23,13 +23,13 @@ interface SettingsDialogProps {
 export function SettingsDialog({ open, setOpen }: SettingsDialogProps) {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
-      <SheetContent className="sm:max-w-lg w-full p-0 h-full" side="right">
-        <SheetHeader className="px-6 py-4 border-b">
+      <SheetContent className="sm:max-w-lg w-full p-0 h-full flex flex-col" side="right">
+        <SheetHeader className="px-6 py-4 border-b flex-shrink-0">
           <SheetTitle className="text-xl">Settings</SheetTitle>
         </SheetHeader>
         
-        <Tabs defaultValue="account" className="h-[calc(100%-4rem)]">
-          <div className="border-b">
+        <Tabs defaultValue="account" className="flex-1 flex flex-col overflow-hidden">
+          <div className="border-b flex-shrink-0">
             <TabsList className="px-4 h-12 justify-start">
               <TabsTrigger value="account">Account</TabsTrigger>
               <TabsTrigger value="ai">AI & Chat</TabsTrigger>
@@ -40,8 +40,8 @@ export function SettingsDialog({ open, setOpen }: SettingsDialogProps) {
             </TabsList>
           </div>
           
-          <ScrollArea className="h-full">
-            <div className="px-6 py-4">
+          <ScrollArea className="flex-1">
+            <div className="px-6 py-4 pb-20">
               <TabsContent value="account" className="mt-0 focus-visible:outline-none">
                 <AccountSettings />
               </TabsContent>

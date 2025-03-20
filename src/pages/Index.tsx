@@ -4,6 +4,7 @@ import Sidebar from '@/components/Sidebar/Sidebar';
 import ChatWindow from '@/components/Chat/ChatWindow';
 import { ChatProvider } from '@/contexts/ChatContext';
 import { useIsMobile } from '@/hooks/use-mobile';
+import ProfileDropdown from '@/components/Profile/ProfileDropdown';
 
 const Index = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -62,6 +63,11 @@ const Index = () => {
               </svg>
             </button>
           )}
+          
+          {/* User profile dropdown in the top right corner */}
+          <div className="absolute top-3 right-3 z-10">
+            <ProfileDropdown />
+          </div>
           
           <ChatWindow />
         </div>
